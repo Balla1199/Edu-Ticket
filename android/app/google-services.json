@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "696576313674",
+    "project_id": "edu-ticket",
+    "storage_bucket": "edu-ticket.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696576313674:android:bb1c8482f4567e964099b3",
+        "android_client_info": {
+          "package_name": "com.example.eduticket"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWlelfLgkvQw3Ao0Nwpiw_ibTfXex-MR0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
