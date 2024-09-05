@@ -1,26 +1,27 @@
-import 'package:eduticket/services/UtilisateurService.dart';
 import 'package:flutter/material.dart';
 import 'package:eduticket/models/utilisateur.dart';
+import 'package:eduticket/services/UtilisateurService.dart';
+import 'package:eduticket/widgets/UtilisateurCard.dart'; 
+
 class UtilisateurListPage extends StatefulWidget {
   @override
   _UtilisateurListPageState createState() => _UtilisateurListPageState();
 }
 
 class _UtilisateurListPageState extends State<UtilisateurListPage> {
-  final UtilisateurService _utilisateurService = UtilisateurService(); // Création de l'instance de UtilisateurService
+  final UtilisateurService _utilisateurService = UtilisateurService();
 
   List<Utilisateur> _utilisateurs = [];
 
   @override
   void initState() {
     super.initState();
-    _loadUtilisateurs(); // Charger les utilisateurs lors de l'initialisation
+    _loadUtilisateurs();
   }
 
-  // Méthode pour charger la liste des utilisateurs depuis Firestore
   Future<void> _loadUtilisateurs() async {
     try {
-      final utilisateurs = await _utilisateurService.getUtilisateurs(); // Utiliser l'instance pour appeler la méthode
+      final utilisateurs = await _utilisateurService.getUtilisateurs();
       setState(() {
         _utilisateurs = utilisateurs;
       });
@@ -29,11 +30,10 @@ class _UtilisateurListPageState extends State<UtilisateurListPage> {
     }
   }
 
-  // Méthode pour supprimer un utilisateur
   Future<void> _supprimerUtilisateur(String id) async {
     try {
-      await _utilisateurService.supprimerUtilisateur(id); // Utiliser l'instance pour appeler la méthode
-      _loadUtilisateurs(); // Recharge la liste après suppression
+      await _utilisateurService.supprimerUtilisateur(id);
+      _loadUtilisateurs();
     } catch (e) {
       print('Erreur lors de la suppression de l\'utilisateur: $e');
     }
@@ -49,13 +49,9 @@ class _UtilisateurListPageState extends State<UtilisateurListPage> {
         itemCount: _utilisateurs.length,
         itemBuilder: (context, index) {
           final utilisateur = _utilisateurs[index];
-          return ListTile(
-            title: Text(utilisateur.nom),
-            subtitle: Text(utilisateur.email),
-            trailing: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () => _supprimerUtilisateur(utilisateur.id),
-            ),
+          return UtilisateurCard(
+            utilisateur: utilisateur,
+            onDelete: () => _supprimerUtilisateur(utilisateur.id),
           );
         },
       ),

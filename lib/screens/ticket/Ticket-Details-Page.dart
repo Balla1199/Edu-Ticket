@@ -1,6 +1,7 @@
 import 'package:eduticket/models/Ticket-model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:eduticket/widgets/ticket_detail_section_widget.dart';
 
 class DetailTicketPage extends StatelessWidget {
   final Ticket ticket;
@@ -15,49 +16,39 @@ class DetailTicketPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Détails du Ticket'),
+        title: Text('Détails du Ticket', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.blueGrey[800],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Card(
-          elevation: 4.0, // Ajoute une ombre pour donner un effet de relief à la carte
+          elevation: 8.0, // Ombrage plus profond pour un effet plus marqué
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0), // Bordures arrondies
+            borderRadius: BorderRadius.circular(12.0), // Bordures arrondies plus douces
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Description:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                TicketDetailSectionWidget(
+                  title: 'Description:',
+                  content: ticket.description,
                 ),
-                SizedBox(height: 8),
-                Text(ticket.description),
-                SizedBox(height: 16),
-                Text(
-                  'Date de Création:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                TicketDetailSectionWidget(
+                  title: 'Date de Création:',
+                  content: _formatDate(ticket.dateCreation),
                 ),
-                SizedBox(height: 8),
-                Text(_formatDate(ticket.dateCreation)),
-                SizedBox(height: 16),
-                Text(
-                  'Réponse:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                TicketDetailSectionWidget(
+                  title: 'Réponse:',
+                  content: ticket.reponse ?? 'Aucune réponse',
                 ),
-                SizedBox(height: 8),
-                Text(ticket.reponse ?? 'Aucune réponse'),
-                SizedBox(height: 16),
-                Text(
-                  'Date de Résolution:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                TicketDetailSectionWidget(
+                  title: 'Date de Résolution:',
+                  content: ticket.dateResolution != null
+                      ? _formatDate(ticket.dateResolution!)
+                      : 'Non résolu',
                 ),
-                SizedBox(height: 8),
-                Text(ticket.dateResolution != null
-                    ? _formatDate(ticket.dateResolution!)
-                    : 'Non résolu'),
               ],
             ),
           ),

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 class ConversationListWidget extends StatelessWidget {
   final String userId;
 
-  ConversationListWidget({required this.userId});
+  const ConversationListWidget({Key? key, required this.userId}) : super(key: key);
 
   Future<Utilisateur?> _getUserById(String userId) async {
     return await AuthService().getUserById(userId);
@@ -20,25 +20,25 @@ class ConversationListWidget extends StatelessWidget {
     return StreamBuilder<List<Conversation>>(
       stream: ConversationService().getConversations(userId),
       builder: (context, snapshot) {
-        // Log pour vérifier l'état de la connexion
-        print('État de la connexion: ${snapshot.connectionState}');
-        
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(),
+          );
         }
-        
-        // Log pour vérifier s'il y a des données ou non
+
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          print('Aucune conversation trouvée.');
-          return Center(child: Text('Aucune conversation trouvée.'));
+          return Center(
+            child: Text(
+              'Aucune conversation trouvée.',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+          );
         }
 
         final conversations = snapshot.data!;
-        
-        // Log des conversations récupérées
-        print('Conversations récupérées: ${conversations.length} conversations trouvées.');
 
         return ListView.builder(
+          padding: EdgeInsets.all(8.0),
           itemCount: conversations.length,
           itemBuilder: (context, index) {
             final conversation = conversations[index];
@@ -51,16 +51,24 @@ class ConversationListWidget extends StatelessWidget {
               builder: (context, userSnapshot) {
                 if (userSnapshot.connectionState == ConnectionState.waiting) {
                   return ListTile(
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.0),
                     leading: CircularProgressIndicator(),
-                    title: Text('Chargement...'),
+                    title: Text(
+                      'Chargement...',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     subtitle: Text(conversation.lastMessage),
                   );
                 }
 
                 if (!userSnapshot.hasData) {
                   return ListTile(
-                    leading: Icon(Icons.error),
-                    title: Text('Utilisateur inconnu'),
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                    leading: Icon(Icons.error, color: Colors.red),
+                    title: Text(
+                      'Utilisateur inconnu',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     subtitle: Text(conversation.lastMessage),
                   );
                 }
@@ -68,21 +76,38 @@ class ConversationListWidget extends StatelessWidget {
                 final otherUser = userSnapshot.data!;
 
                 return ListTile(
-                  leading: Icon(Icons.person),
-                  title: Text(otherUser.nom), // Affiche le nom de l'utilisateur
-                  subtitle: Text(conversation.lastMessage),
+                  contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                  leading: CircleAvatar(
+                    backgroundImage: AssetImage('images/user.png'),
+                    radius: 24,
+                  ),
+                  title: Text(
+                    otherUser.nom,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    conversation.lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                   trailing: conversation.hasUnreadMessages
-                      ? Icon(Icons.circle, color: Colors.red, size: 10)
+                      ? Icon(
+                          Icons.circle,
+                          color: Colors.red,
+                          size: 10,
+                        )
                       : null,
                   onTap: () {
-                    // Log pour vérifier la navigation
-                    print('Ouverture du chat pour la conversation: ${conversation.id}');
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatPage(
                           conversation: conversation,
-                          currentUserId: userId, // Passe l'ID de l'utilisateur actuel
+                          currentUserId: userId,
                         ),
                       ),
                     );
