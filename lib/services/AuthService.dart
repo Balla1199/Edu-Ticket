@@ -23,6 +23,11 @@ class AuthService {
     return null; // Aucun utilisateur connecté ou données utilisateur non trouvées
   }
 
+  Future<String> getCurrentFormateurId() async {
+  Utilisateur? utilisateur = await getCurrentUser();
+  return utilisateur?.id ?? ''; // Retourne l'ID de l'utilisateur ou une chaîne vide si aucun utilisateur n'est connecté
+}
+
   // Méthode pour enregistrer un nouvel utilisateur
   Future<Utilisateur?> registerWithEmailAndPassword(String id, String nom, String email, String motDePasse, Role role) async {
     try {
@@ -125,5 +130,7 @@ class AuthService {
       print('Erreur lors de la déconnexion: $e');
     }
   }
+  
+  
   
 }

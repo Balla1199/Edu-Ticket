@@ -1,4 +1,3 @@
-// lib/models/Ticket.dart
 enum Statut { attente, enCours, resolu }
 enum Categorie { technique, pedagogique }
 
@@ -12,7 +11,7 @@ class Ticket {
   DateTime dateCreation;
   DateTime? dateResolution;
   String idApprenant;
-  String idFormateur;
+  String? idFormateur; // Champ optionnel
 
   Ticket({
     required this.id,
@@ -24,6 +23,43 @@ class Ticket {
     required this.dateCreation,
     this.dateResolution,
     required this.idApprenant,
-    required this.idFormateur,
+    this.idFormateur, // Optionnel lors de la création
   });
+
+  // Méthode pour attribuer l'ID du formateur lorsque le formateur répond au ticket
+  void assignerFormateur(String idFormateur) {
+    this.idFormateur = idFormateur;
+  }
+
+  // Convert Ticket to Map
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'titre': titre,
+      'description': description,
+      'reponse': reponse,
+      'statut': statut.toString().split('.').last, // Convert enum to string
+      'categorie': categorie.toString().split('.').last, // Convert enum to string
+      'dateCreation': dateCreation.toIso8601String(),
+      'dateResolution': dateResolution?.toIso8601String(),
+      'idApprenant': idApprenant,
+      'idFormateur': idFormateur,
+    };
+  }
+
+  // Create a Ticket object from a Map
+  factory Ticket.fromMap(Map<String, dynamic> map) {
+    return Ticket(
+      id: map['id'],
+      titre: map['titre'],
+      description: map['description'],
+      reponse: map['reponse'],
+      statut: Statut.values.firstWhere((e) => e.toString().split('.').last == map['statut']),
+      categorie: Categorie.values.firstWhere((e) => e.toString().split('.').last == map['categorie']),
+      dateCreation: DateTime.parse(map['dateCreation']),
+      dateResolution: map['dateResolution'] != null ? DateTime.parse(map['dateResolution']) : null,
+      idApprenant: map['idApprenant'],
+      idFormateur: map['idFormateur'],
+    );
+  }
 }

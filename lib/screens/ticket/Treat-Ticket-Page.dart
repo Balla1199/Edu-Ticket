@@ -1,6 +1,7 @@
 import 'package:eduticket/models/Ticket-model.dart';
 import 'package:flutter/material.dart';
 import 'package:eduticket/services/TicketService.dart';
+import 'package:eduticket/services/AuthService.dart'; // Assurez-vous d'importer AuthService
 
 class TreatTicketPage extends StatefulWidget {
   final Ticket ticket;
@@ -23,10 +24,18 @@ class _TreatTicketPageState extends State<TreatTicketPage> {
     _reponseController.text = widget.ticket.reponse ?? '';
   }
 
+  // Méthode pour obtenir l'ID du formateur actuel
+  Future<String> _getCurrentFormateurId() async {
+    return await AuthService().getCurrentFormateurId();
+  }
+
   void _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
       // Définir la date de résolution avec la date et l'heure actuelles
       _dateResolution = DateTime.now();
+
+      // Obtenir l'ID du formateur actuel
+      final currentFormateurId = await _getCurrentFormateurId();
 
       Ticket updatedTicket = Ticket(
         id: widget.ticket.id,
@@ -38,7 +47,7 @@ class _TreatTicketPageState extends State<TreatTicketPage> {
         dateCreation: widget.ticket.dateCreation,
         dateResolution: _dateResolution, // Attribuer la date de résolution
         idApprenant: widget.ticket.idApprenant,
-        idFormateur: widget.ticket.idFormateur,
+        idFormateur: currentFormateurId, // Mettre à jour avec l'ID du formateur actuel
       );
 
       try {

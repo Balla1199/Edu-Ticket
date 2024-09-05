@@ -1,28 +1,49 @@
-import 'package:eduticket/screens/Chat/Conversation-List-Page.dart';
+import 'package:flutter/material.dart';
+import 'package:eduticket/screens/home/HomePage.dart';
+import 'package:eduticket/screens/utilisateur/Utilisateur-List-page.dart';
+import 'package:eduticket/screens/ticket/Ticket-List-Page.dart';
 import 'package:eduticket/screens/HistoriquePage.dart';
 import 'package:eduticket/screens/Profil/Profil-Page.dart';
-import 'package:flutter/material.dart';
-import 'package:eduticket/screens/home/HomePage.dart'; // Page d'accueil
-import 'package:eduticket/screens/utilisateur/Utilisateur-List-page.dart'; // Page des utilisateurs
-import 'package:eduticket/screens/ticket/Ticket-List-Page.dart'; // Page de la liste des tickets
+import 'package:eduticket/screens/Chat/Conversation-List-Page.dart';
+import 'package:eduticket/services/AuthService.dart';
 
 class HomeWithBottomNavigationPage extends StatefulWidget {
   @override
   _HomeWithBottomNavigationPageState createState() => _HomeWithBottomNavigationPageState();
 }
+
 class _HomeWithBottomNavigationPageState extends State<HomeWithBottomNavigationPage> {
   // Indice de la page actuellement sélectionnée
   int _selectedIndex = 0;
 
+  // Variable pour stocker l'ID de l'utilisateur
+  String? _userId;
+
   // Liste des pages à afficher dans le corps du Scaffold
-  final List<Widget> _pages = [
-    HomePage(),                // Page d'accueil
-    UtilisateurListPage(),     // Page des utilisateurs
-    TicketListPage(),          // Page de la liste des tickets
-    HistoriquePage(),          // Page de l'historique des tickets
-    ProfilPage(),              // Page de profil
-    ConversationListPage(userId: 'userIdPlaceholder') // Page de la liste des conversations
-  ];
+  late List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _initUser();
+  }
+
+  // Méthode pour initialiser les données utilisateur
+  Future<void> _initUser() async {
+    String userId = await AuthService().getCurrentFormateurId();
+    setState(() {
+      _userId = userId;
+
+      _pages = [
+        HomePage(),                // Page d'accueil
+        UtilisateurListPage(),     // Page des utilisateurs
+        TicketListPage(),          // Page de la liste des tickets
+        HistoriquePage(),          // Page de l'historique des tickets
+        ProfilPage(),              // Page de profil
+        ConversationListPage(userId: userId), // Page de la liste des conversations
+      ];
+    });
+  }
 
   // Fonction appelée lorsque l'utilisateur sélectionne un élément dans la BottomNavigationBar
   void _onItemTapped(int index) {
@@ -34,7 +55,9 @@ class _HomeWithBottomNavigationPageState extends State<HomeWithBottomNavigationP
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex], // Affiche la page sélectionnée
+      body: _userId == null 
+          ? Center(child: CircularProgressIndicator()) 
+          : _pages[_selectedIndex], // Affiche la page sélectionnée
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

@@ -1,87 +1,132 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eduticket/models/Conversation.dart';
 import 'package:eduticket/models/Ticket-model.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:rxdart/rxdart.dart' as rxdart;
 
 class ConversationService {
-  final CollectionReference conversationCollection =
-      FirebaseFirestore.instance.collection('conversations');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Créer ou récupérer une conversation pour un ticket
+  Future<Conversation> getOrCreateConversation(Ticket ticket) async {
+    try {
+      if (ticket.idApprenant == null || ticket.idFormateur == null) {
+        throw ArgumentError('L\'ID de l\'apprenant et du formateur sont requis');
+      }
+
+      DocumentReference<Map<String, dynamic>> ticketRef = _firestore.collection('tickets').doc(ticket.id);
+      print('Référence du ticket: ${ticketRef.id}');
+
+      QuerySnapshot<Map<String, dynamic>> convoSnapshot = await ticketRef.collection('conversations').get();
+      print('Nombre de conversations trouvées: ${convoSnapshot.docs.length}');
+
+      if (convoSnapshot.docs.isNotEmpty) {
+        DocumentSnapshot<Map<String, dynamic>> firstConvoDoc = convoSnapshot.docs.first;
+        print('Première conversation trouvée: ${firstConvoDoc.id}');
+        return Conversation.fromMap(firstConvoDoc.id, firstConvoDoc.data()!);
+      } else {
+        DocumentReference<Map<String, dynamic>> convoRef = ticketRef.collection('conversations').doc();
+        print('ID de la nouvelle conversation: ${convoRef.id}');
+
+        Conversation newConversation = Conversation(
+          id: convoRef.id,
+          apprenantId: ticket.idApprenant!,
+          formateurId: ticket.idFormateur!,
+          ticketId: ticket.id!,
+          lastMessage: 'Nouvelle conversation créée',
+          lastMessageTimestamp: DateTime.now(),
+          hasUnreadMessages: true,
+        );
+        print('Nouvelle conversation créée: ${newConversation.toMap()}');
+
+        await convoRef.set(newConversation.toMap());
+        print('Nouvelle conversation enregistrée dans Firestore');
+
+        return newConversation;
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération ou création de la conversation: $e');
+      throw e;
+    }
+  }
 
   // Créer ou mettre à jour une conversation
   Future<void> createOrUpdateConversation(Conversation conversation) async {
     try {
-      await conversationCollection.doc(conversation.id).set(conversation.toMap());
-      print('Conversation créée ou mise à jour avec succès : ${conversation.id}');
-    } catch (e) {
-      print('Erreur lors de la création ou de la mise à jour de la conversation : $e');
-    }
-  }
+      DocumentReference<Map<String, dynamic>> convoRef = _firestore
+          .collection('tickets')
+          .doc(conversation.ticketId)
+          .collection('conversations')
+          .doc(conversation.id);
 
-  // Récupérer toutes les conversations d'un utilisateur
-  Stream<List<Conversation>> getConversations(String userId) {
-    print('Récupération des conversations pour l\'utilisateur : $userId');
+      print('Référence de la conversation à mettre à jour: ${convoRef.id}');
+      print('Données de la conversation: ${conversation.toMap()}');
 
-    final queryForApprenant = conversationCollection
-        .where('apprenantId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Conversation.fromMap(doc.id, doc.data() as Map<String, dynamic>))
-              .toList();
-        });
+      await convoRef.set(conversation.toMap(), SetOptions(merge: true));
+      print('Conversation ${conversation.id} mise à jour dans Firestore');
 
-    final queryForFormateur = conversationCollection
-        .where('formateurId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Conversation.fromMap(doc.id, doc.data() as Map<String, dynamic>))
-              .toList();
-        });
-
-    return rxdart.Rx.combineLatest2(
-      queryForApprenant,
-      queryForFormateur,
-      (List<Conversation> apprenantConversations, List<Conversation> formateurConversations) {
-        final allConversations = <Conversation>{};
-        allConversations.addAll(apprenantConversations);
-        allConversations.addAll(formateurConversations);
-        return allConversations.toList();
-      },
-    );
-  }
-
-  // Obtenir ou créer une conversation pour un ticket
-  Future<Conversation> getOrCreateConversation(Ticket ticket) async {
-    try {
-      // Rechercher une conversation existante liée au ticket
-      final querySnapshot = await conversationCollection
-          .where('ticketId', isEqualTo: ticket.id)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        // Si une conversation existe, la retourner
-        final doc = querySnapshot.docs.first;
-        return Conversation.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await convoRef.get();
+      if (snapshot.exists) {
+        print('Conversation après mise à jour: ${snapshot.data()}');
       } else {
-        // Sinon, créer une nouvelle conversation
-        final newConversation = Conversation(
-          id: conversationCollection.doc().id,
-          apprenantId: ticket.idApprenant,
-          formateurId: ticket.idFormateur,
-          ticketId: ticket.id, // Associe la conversation au ticket
-          lastMessage: 'Aucun message', // Valeur par défaut ou calculée
-          lastMessageTimestamp: DateTime.now(), // Valeur par défaut ou calculée
-          hasUnreadMessages: false, // Valeur par défaut ou calculée
-        );
-
-        await conversationCollection.doc(newConversation.id).set(newConversation.toMap());
-        return newConversation;
+        print('Erreur: La conversation n\'a pas été trouvée après la mise à jour');
       }
     } catch (e) {
-      throw Exception('Erreur lors de la récupération ou de la création de la conversation : $e');
+      print('Erreur lors de la création ou mise à jour de la conversation: $e');
+      throw e;
     }
   }
+  
+  // Méthode pour obtenir toutes les conversations d'un utilisateur
+  Stream<List<Conversation>> getConversations(String userId) async* {
+  try {
+    print('Recherche des conversations pour l\'utilisateur: $userId');
+
+    // Requête pour récupérer les tickets où l'utilisateur est apprenant
+    QuerySnapshot<Map<String, dynamic>> ticketSnapshot = await _firestore
+        .collection('tickets')
+        .where('idApprenant', isEqualTo: userId)
+        .get();
+
+    // Requête pour récupérer les tickets où l'utilisateur est formateur
+    QuerySnapshot<Map<String, dynamic>> ticketSnapshotFormateur = await _firestore
+        .collection('tickets')
+        .where('idFormateur', isEqualTo: userId)
+        .get();
+
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> allTickets = [
+      ...ticketSnapshot.docs,
+      ...ticketSnapshotFormateur.docs
+    ];
+
+    print('Tickets trouvés pour l\'utilisateur: ${allTickets.length}');
+
+    List<Conversation> allConversations = [];
+
+    // Rechercher les conversations pour chaque ticket
+    for (var ticketDoc in allTickets) {
+      String ticketId = ticketDoc.id;
+      var convoSnapshot = await _firestore
+          .collection('tickets')
+          .doc(ticketId)
+          .collection('conversations')
+          .get();
+
+      allConversations.addAll(convoSnapshot.docs.map((doc) {
+        print('Conversation trouvée dans ticket $ticketId: ${doc.id}');
+        return Conversation.fromMap(doc.id, doc.data()!);
+      }).toList());
+    }
+
+    if (allConversations.isEmpty) {
+      print('Aucune conversation trouvée pour l\'utilisateur: $userId');
+    } else {
+      print('Nombre total de conversations trouvées: ${allConversations.length}');
+    }
+
+    yield allConversations;
+  } catch (e) {
+    print('Erreur lors de la récupération des conversations: $e');
+    throw e;
+  }
+}
+
 }

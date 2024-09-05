@@ -1,11 +1,12 @@
+import 'package:eduticket/app-routes.dart';
 import 'package:eduticket/models/Ticket-model.dart';
-import 'package:eduticket/screens/Chat/Chat-Page.dart';
 import 'package:eduticket/screens/ticket/Ticket-Details-Page.dart';
 import 'package:eduticket/screens/ticket/Treat-Ticket-Page.dart';
 import 'package:eduticket/services/ConversationService.dart';
 import 'package:eduticket/services/TicketService.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 
 class TicketCard extends StatelessWidget {
   final Ticket ticket;
@@ -38,33 +39,44 @@ class TicketCard extends StatelessWidget {
   String _formatDate(DateTime date) {
     return DateFormat('dd/MM/yyyy').format(date);
   }
+Future<void> _openChat(BuildContext context) async {
+  print('Tentative d\'ouverture du chat pour le ticket ${ticket.id}');
 
-  Future<void> _openChat(BuildContext context) async {
-    print('Tentative d\'ouverture du chat pour le ticket ${ticket.id}');
+  try {
+    // Récupérer l'utilisateur actuel
+    final currentUser = FirebaseAuth.instance.currentUser;
 
-    try {
-      final conversation = await ConversationService().getOrCreateConversation(ticket);
-
-      // Log l'objet conversation obtenu pour vérifier qu'il est correct
-      print('Conversation obtenue : ${conversation.id}');
-      
-      // Naviguer vers la page de chat
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatPage(
-            conversation: conversation,
-            currentUserId: currentUserId, // Pass currentUserId here
-          ),
-        ),
-      );
-
-      print('Navigation vers ChatPage réussie.');
-    } catch (e) {
-      // Log les erreurs éventuelles pour aider au débogage
-      print('Erreur lors de l\'ouverture du chat : $e');
+    if (currentUser == null) {
+      throw Exception('Utilisateur non authentifié');
     }
+
+    // Mettre à jour le champ idFormateur du ticket avec l'ID de l'utilisateur authentifié
+    ticket.idFormateur = currentUser.uid;
+    await TicketService().updateTicket(ticket);
+
+    final conversation = await ConversationService().getOrCreateConversation(ticket);
+
+    // Log l'objet conversation obtenu pour vérifier qu'il est correct
+    print('Conversation obtenue : ${conversation.id}');
+    
+    // Naviguer vers la page de chat
+    Navigator.pushNamed(
+      context,
+      AppRoutes.chatPage,
+      arguments: {
+        'conversation': conversation,
+        'currentUserId': currentUser.uid, // Pass currentUserId here
+      },
+    );
+
+    print('Navigation vers ChatPage réussie.');
+  } catch (e) {
+    // Log les erreurs éventuelles pour aider au débogage
+    print('Erreur lors de l\'ouverture du chat : $e');
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +149,10 @@ class TicketCard extends StatelessWidget {
                 if (isFormateur && ticket.statut == Statut.attente)
                   IconButton(
                     icon: Icon(Icons.chat, color: Colors.white),
-                    onPressed: () => _openChat(context),
+                    onPressed: () {
+                      print('Bouton de chat cliqué'); // Vérifiez que ceci s'affiche dans la console
+                      _openChat(context);
+                    },
                   ),
               ],
             ),

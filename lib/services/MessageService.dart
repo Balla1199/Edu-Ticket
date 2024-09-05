@@ -1,71 +1,74 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eduticket/models/Message.dart';
-import 'package:eduticket/models/Utilisateur.dart';
+import 'package:eduticket/models/Ticket-model.dart';
 import 'package:eduticket/services/AuthService.dart';
+import 'package:eduticket/services/ConversationService.dart';
+import 'package:eduticket/services/TicketService.dart';
+import 'package:eduticket/models/Conversation.dart';
 
 class MessageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final AuthService _authService = AuthService();
-// Méthode pour envoyer un message
-Future<void> sendMessage({
-  required String ticketId,  // ID du ticket
-  required String content,   // Contenu du message
-  required String receiverId, // ID de l'apprenant
-}) async {
-  try {
-    // Obtenez l'utilisateur actuellement connecté (formateur)
-    Utilisateur? currentUser = await _authService.getCurrentUser();
-    if (currentUser == null) {
-      throw Exception('Utilisateur non authentifié');
-    }
+  final TicketService _ticketService = TicketService();
+  final ConversationService _conversationService = ConversationService();
 
-    // Créez un nouvel ID pour le message
-    String messageId = _firestore.collection('messages').doc().id;
+  // Méthode pour créer un message et mettre à jour la conversation
+  Future<void> sendMessage(String conversationId, String ticketId, String content) async {
+    try {
+      // Obtenez l'ID de l'utilisateur connecté (formateur)
+      String senderId = (await AuthService().getCurrentUser())?.id ?? '';
+      print('ID du formateur: $senderId');
 
-    // Créez une nouvelle conversation si elle n'existe pas encore
-    String conversationId = await _getOrCreateConversationId(ticketId, currentUser.id, receiverId);
+      // Obtenez le ticket correspondant pour récupérer les détails
+      Ticket ticket = await _ticketService.getTicketById(ticketId);
+      print('Ticket récupéré: ${ticket.toMap()}');
 
-    // Créez un nouveau message
-    final message = Message(
-      id: messageId,
-      conversationId: conversationId,
-      ticketId: ticketId, // Utiliser le ticketId fourni
-      senderId: currentUser.id, // Utilisez l'ID du formateur authentifié
-      receiverId: receiverId,
-      content: content,
-      timestamp: DateTime.now(), // Utilisez l'heure actuelle comme timestamp
-    );
+      if (ticket.idApprenant == null || ticket.idFormateur == null) {
+        throw ArgumentError('L\'ID de l\'apprenant et du formateur sont requis');
+      }
 
-    // Ajoutez le message à Firestore
-    await _firestore.collection('messages').doc(messageId).set(message.toMap());
-    print('Message envoyé avec succès');
-  } catch (e) {
-    print('Erreur lors de l\'envoi du message : $e');
-  }
-}
+      // Obtenez l'ID de l'apprenant depuis le ticket
+      String receiverId = ticket.idApprenant!;
+      print('ID de l\'apprenant: $receiverId');
 
-  // Méthode pour obtenir ou créer un ID de conversation
-  Future<String> _getOrCreateConversationId(String ticketId, String senderId, String receiverId) async {
-    // Vérifiez si une conversation existe déjà pour ce ticket entre ces deux utilisateurs
-    var querySnapshot = await _firestore
-        .collection('conversations')
-        .where('ticketId', isEqualTo: ticketId)
-        .where('senderId', isEqualTo: senderId)
-        .where('receiverId', isEqualTo: receiverId)
-        .get();
+      // Créez un nouvel ID pour le message
+      String messageId = _firestore.collection('messages').doc().id;
+      print('ID du message généré: $messageId');
 
-    if (querySnapshot.docs.isNotEmpty) {
-      // Retourne l'ID de la conversation existante
-      return querySnapshot.docs.first.id;
-    } else {
-      // Créez une nouvelle conversation
-      String conversationId = _firestore.collection('conversations').doc().id;
-      await _firestore.collection('conversations').doc(conversationId).set({
-        'ticketId': ticketId,
-        'senderId': senderId,
-        'receiverId': receiverId,
-      });
-      return conversationId;
+      // Créez un nouveau message
+      Message message = Message(
+        id: messageId,
+        conversationId: conversationId,
+        ticketId: ticketId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: content,
+        timestamp: DateTime.now(),
+      );
+      print('Message créé: ${message.toMap()}');
+
+      // Enregistrez le message dans Firestore
+      await _firestore.collection('messages').doc(messageId).set(message.toMap());
+      print('Message enregistré dans Firestore');
+
+      // Obtenez ou créez la conversation associée au message
+      Conversation conversation = await _conversationService.getOrCreateConversation(ticket);
+      print('Conversation récupérée/créée: ${conversation.toMap()}');
+
+      // Mettez à jour la conversation avec les détails du dernier message
+      conversation = conversation.copyWith(
+        lastMessage: content,
+        lastMessageTimestamp: message.timestamp,
+        hasUnreadMessages: true,
+      );
+      print('Conversation mise à jour: ${conversation.toMap()}');
+
+      // Sauvegardez la conversation mise à jour dans Firestore
+      await _conversationService.createOrUpdateConversation(conversation);
+      print('Conversation mise à jour dans Firestore');
+
+      print('Message envoyé avec succès.');
+    } catch (e) {
+      print('Erreur lors de l\'envoi du message: $e');
     }
   }
 }

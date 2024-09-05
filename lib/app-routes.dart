@@ -7,14 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:eduticket/screens/ticket/Ticket-Form-Page.dart';
 import 'package:eduticket/screens/ticket/Ticket-List-Page.dart';
 import 'package:eduticket/screens/ticket/Treat-Ticket-Page.dart';
-import 'package:eduticket/screens/ticket/Ticket-Details-Page.dart'; // Assurez-vous que cette page existe
+import 'package:eduticket/screens/ticket/Ticket-Details-Page.dart'; 
 import 'package:eduticket/screens/utilisateur/Utilisateur-Form-Page.dart';
 import 'package:eduticket/screens/utilisateur/Utilisateur-List-page.dart';
 import 'package:eduticket/screens/login/LoginPage.dart';
 import 'package:eduticket/screens/home/HomePage.dart';
-import 'package:eduticket/models/Ticket-model.dart'; // Import correct
-
-
+import 'package:eduticket/models/Ticket-model.dart'; 
 class AppRoutes {
   // Définition des chemins de route
   static const String loginPage = '/login';
@@ -33,7 +31,7 @@ class AppRoutes {
   static const String conversationListPage = '/conversation-list'; // Ajout de la route pour ConversationListPage
 
   // Fonction pour générer les routes
-  static Route<dynamic> generateRoute(RouteSettings settings) {
+ static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case loginPage:
         return MaterialPageRoute(builder: (_) => const LoginPage());
@@ -61,19 +59,24 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => HistoriquePage());
       case profilePage:
         return MaterialPageRoute(builder: (_) => ProfilPage());
+
       case chatPage:
-        final Conversation conversation = settings.arguments as Conversation;
+        final Map<String, dynamic> args = settings.arguments as Map<String, dynamic>;
+        final Conversation conversation = args['conversation'];
+        final String currentUserId = args['currentUserId'];
         return MaterialPageRoute(
           builder: (_) => ChatPage(
             conversation: conversation,
-            currentUserId: conversation.formateurId, // Vous pouvez ajuster en fonction de l'utilisateur connecté
+            currentUserId: currentUserId,
           ),
         );
+
       case conversationListPage:
         final String userId = settings.arguments as String;
         return MaterialPageRoute(
           builder: (_) => ConversationListPage(userId: userId),
         );
+
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -84,4 +87,6 @@ class AppRoutes {
         );
     }
   }
+
+
 }
