@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:eduticket/models/Conversation.dart';
 import 'package:eduticket/models/Message.dart';
 import 'package:eduticket/services/ConversationService.dart';
-import 'package:eduticket/widgets/MessageBubble.dart'; 
+import 'package:eduticket/widgets/MessageBubble.dart';
 
 class ChatPage extends StatefulWidget {
   final Conversation conversation;
@@ -93,12 +93,13 @@ class _ChatPageState extends State<ChatPage> {
                 messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
                 return ListView.builder(
-                  reverse: true,
+                  // By default, ListView displays items in a vertical order.
+                  // To make sure the oldest messages appear at the top, no need to reverse the ListView.
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
                     final isMe = message.senderId == widget.currentUserId;
-                    return MessageBubble(message: message, isMe: isMe); // Appel du widget MessageBubble
+                    return MessageBubble(message: message, isMe: isMe);
                   },
                 );
               },

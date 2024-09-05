@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eduticket/models/Utilisateur.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -24,9 +23,9 @@ class AuthService {
   }
 
   Future<String> getCurrentFormateurId() async {
-  Utilisateur? utilisateur = await getCurrentUser();
-  return utilisateur?.id ?? ''; // Retourne l'ID de l'utilisateur ou une chaîne vide si aucun utilisateur n'est connecté
-}
+    Utilisateur? utilisateur = await getCurrentUser();
+    return utilisateur?.id ?? ''; // Retourne l'ID de l'utilisateur ou une chaîne vide si aucun utilisateur n'est connecté
+  }
 
   // Méthode pour enregistrer un nouvel utilisateur
   Future<Utilisateur?> registerWithEmailAndPassword(String id, String nom, String email, String motDePasse, Role role) async {
@@ -121,7 +120,7 @@ class AuthService {
     }
   }
 
-  //Méthode pour se déconnecter
+  // Méthode pour se déconnecter
   Future<void> logout() async {
     try {
       await _auth.signOut();
@@ -130,7 +129,19 @@ class AuthService {
       print('Erreur lors de la déconnexion: $e');
     }
   }
-  
-  
-  
+
+  // Nouvelle méthode pour obtenir un utilisateur par son ID
+  Future<Utilisateur?> getUserById(String userId) async {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> userData = await _firestore.collection('utilisateurs').doc(userId).get();
+      if (userData.exists) {
+        Utilisateur utilisateur = Utilisateur.fromMap(userData.data()!);
+        return utilisateur;
+      }
+      return null;
+    } catch (e) {
+      print('Erreur lors de la récupération de l\'utilisateur par ID: $e');
+      return null;
+    }
+  }
 }
